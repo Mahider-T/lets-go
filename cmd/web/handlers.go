@@ -20,38 +20,13 @@ func (a *application) home(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		a.serverError(w, err)
+		return
 	}
 
-	for _, snippet := range snippets {
-		fmt.Fprintf(w, "+%v", snippet)
-	}
+	data := a.newTemplateModel(r)
+	data.Snippets = snippets
 
-	// files := []string{
-	// "./ui/html/base.tmpl",
-	// "./ui/html/partials/nav.tmpl",
-	// "./ui/html/pages/home.tmpl",
-	// }
-
-	// ts, err := template.ParseFiles(files...)
-
-	// if err != nil {
-	// log.Println(err.Error())
-	//
-	// a.errorLogger.Println(err.Error())
-	// http.Error(w, "Internal server error", http.StatusInternalServerError)
-	//
-	// a.serverError(w, err)
-	// return
-	// }
-
-	// err = ts.ExecuteTemplate(w, "base", nil)
-	// if err != nil {
-	//log.Println(err.Error())
-	//a.errorLogger.Println(err.Error())
-	//http.Error(w, "Internal server error", http.StatusInternalServerError)
-
-	// a.serverError(w, err)
-	// }
+	a.render(w, http.StatusOK, "home.tmpl", data)
 }
 
 func (a *application) snippetView(w http.ResponseWriter, r *http.Request) {
@@ -70,11 +45,13 @@ func (a *application) snippetView(w http.ResponseWriter, r *http.Request) {
 		} else {
 			a.serverError(w, err)
 		}
-
 		return
 	}
-	// fmt.Fprintf(w, "Display a specific snippet with id ID %d ...", id)
-	fmt.Fprintf(w, "%+v", snp)
+
+	data := a.newTemplateModel(r)
+	data.Snippet = snp
+
+	a.render(w, http.StatusOK, "view.tmpl", data)
 }
 
 func (a *application) snippetCreate(w http.ResponseWriter, r *http.Request) {

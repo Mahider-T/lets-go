@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"flag"
+	"html/template"
 	"log"
 	"net/http"
 	"oogway/first/snippetbox/internal/models"
@@ -12,9 +13,10 @@ import (
 )
 
 type application struct {
-	errorLogger *log.Logger
-	infoLogger  *log.Logger
-	snippets    *models.SnippetModel
+	errorLogger   *log.Logger
+	infoLogger    *log.Logger
+	snippets      *models.SnippetModel
+	templateCache map[string]*template.Template
 }
 
 func main() {
@@ -25,11 +27,18 @@ func main() {
 	addr := flag.String("addr", ":4000", "Port the application runs on")
 	dsn := flag.String("dsn", "web:Maverick2020!@/snippetbox?parseTime=true", "MySQL data source name")
 
+	templateCache, err := newTemplateCache()
+
+	if err != nil {
+		errorLog.Fatal(err)
+	}
+
 	db, err := openBD(*dsn)
 	app := &application{
-		infoLogger:  infoLog,
-		errorLogger: errorLog,
-		snippets:    &models.SnippetModel{DB: db},
+		infoLogger:    infoLog,
+		errorLogger:   errorLog,
+		snippets:      &models.SnippetModel{DB: db},
+		templateCache: templateCache,
 	}
 
 	if err != nil {

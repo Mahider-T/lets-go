@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"net/http"
 	"runtime/debug"
+	"time"
 )
 
 func (a *application) serverError(w http.ResponseWriter, e error) {
@@ -21,4 +23,33 @@ func (a *application) clientError(w http.ResponseWriter, status int) {
 
 func (a *application) notFound(w http.ResponseWriter) {
 	http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+}
+
+func (a *application) render(w http.ResponseWriter, status int, page string, data *templateModel) {
+
+	ts, ok := a.templateCache[page]
+	if !ok {
+		err := fmt.Errorf("the template %s does not exist", page)
+		a.serverError(w, err)
+		return
+	}
+	w.WriteHeader(status)
+
+	buf := new(bytes.Buffer)
+
+	err := ts.ExecuteTemplate(buf, "base", data)
+
+	if err != nil {
+		a.serverError(w, err)
+		return
+	}
+
+	buf.WriteTo(w)
+}
+
+func (a *application) newTemplateModel(r *http.Request) *templateModel {
+
+	return &templateModel{
+		CurrentYear: time.Now().Year(),
+	}
 }
