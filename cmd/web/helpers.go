@@ -54,6 +54,7 @@ func (a *application) newTemplateModel(r *http.Request) *templateModel {
 
 	return &templateModel{
 		CurrentYear: time.Now().Year(),
+		Flash:       a.sessionManager.PopString(r.Context(), "flash"),
 	}
 }
 
