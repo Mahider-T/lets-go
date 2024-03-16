@@ -5,10 +5,20 @@ import (
 	"fmt"
 	"net/http"
 	"oogway/first/snippetbox/internal/models"
+	"oogway/first/snippetbox/internal/validator"
 	"strconv"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/julienschmidt/httprouter"
 )
+
+type snippetCreateForm struct {
+	Title               string `form:"title"`
+	Content             string `form:"content"`
+	Expires             int    `form:"expires"`
+	validator.Validator `form:"-"`
+}
 
 func (a *application) home(w http.ResponseWriter, r *http.Request) {
 
@@ -54,16 +64,67 @@ func (a *application) snippetView(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *application) snippetCreate(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Form to create a snippet goes here ..."))
+
+	data := a.newTemplateModel(r)
+
+	form := snippetCreateForm{
+		Expires: 365,
+	}
+	data.Form = form
+	a.render(w, http.StatusOK, "create.tmpl", data)
+	// w.Write([]byte("Form to create a snippet zgoes here ..."))
 }
 
 func (a *application) snippetCreatePost(w http.ResponseWriter, r *http.Request) {
 
-	title := "O snail"
-	content := "O snail\nClimb Mount Fuji,\nBut slowly, slowly!\n\n-Kobayashi Issa"
-	expires := 7
+	err := r.ParseForm()
+	if err != nil {
+		a.clientError(w, http.StatusBadRequest)
+		return
+	}
+	var form snippetCreateForm
+	err = a.decodePostForm(r, &form)
 
-	id, err := a.snippets.Insert(title, content, expires)
+	if err != nil {
+		a.clientError(w, http.StatusBadRequest)
+	}
+	if err != nil {
+		a.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	form.CheckField(validator.NotBlank(form.Title), "title", "This field cannot be blank")
+	form.CheckField(validator.MaxChars(form.Title, 100), "title", "This field cannot be more than 100 characters long")
+	form.CheckField(validator.NotBlank(form.Content), "content", "This field cannot be blank")
+	form.CheckField(validator.PermittedInt(form.Expires, 1, 7, 365), "expires", "This field must equal 1, 7 or 365")
+
+	if strings.TrimSpace(form.Title) == "" {
+		form.FieldErrors["title"] = "This field can not be empty"
+	} else if utf8.RuneCountInString(form.Title) > 100 {
+		form.FieldErrors["title"] = "This field can not be more than 100 strings long"
+	}
+
+	if strings.TrimSpace(form.Content) == "" {
+		form.FieldErrors["content"] = "This field can not be empty"
+	}
+
+	if form.Expires != 1 && form.Expires != 7 && form.Expires != 365 {
+		form.FieldErrors["expires"] = "Only a day, a week or a year are allowed in this field"
+	}
+
+	if len(form.FieldErrors) > 0 {
+		data := a.newTemplateModel(r)
+		data.Form = form
+		a.render(w, http.StatusUnprocessableEntity, "create.tmpl", data)
+		return
+	}
+
+	if err != nil {
+		a.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	id, err := a.snippets.Insert(form.Title, form.Content, form.Expires)
 
 	if err != nil {
 		a.serverError(w, err)

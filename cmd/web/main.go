@@ -9,6 +9,7 @@ import (
 	"oogway/first/snippetbox/internal/models"
 	"os"
 
+	"github.com/go-playground/form/v4"
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -17,6 +18,7 @@ type application struct {
 	infoLogger    *log.Logger
 	snippets      *models.SnippetModel
 	templateCache map[string]*template.Template
+	formDecoder   *form.Decoder
 }
 
 func main() {
@@ -32,6 +34,7 @@ func main() {
 	if err != nil {
 		errorLog.Fatal(err)
 	}
+	formDecoder := form.NewDecoder()
 
 	db, err := openBD(*dsn)
 	app := &application{
@@ -39,6 +42,7 @@ func main() {
 		errorLogger:   errorLog,
 		snippets:      &models.SnippetModel{DB: db},
 		templateCache: templateCache,
+		formDecoder:   formDecoder,
 	}
 
 	if err != nil {
