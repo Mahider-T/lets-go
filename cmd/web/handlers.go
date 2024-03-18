@@ -90,18 +90,15 @@ func (a *application) snippetCreate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *application) snippetCreatePost(w http.ResponseWriter, r *http.Request) {
+	var form snippetCreateForm
 
 	err := r.ParseForm()
 	if err != nil {
 		a.clientError(w, http.StatusBadRequest)
 		return
 	}
-	var form snippetCreateForm
-	err = a.decodePostForm(r, &form)
 
-	if err != nil {
-		a.clientError(w, http.StatusBadRequest)
-	}
+	err = a.decodePostForm(r, &form)
 	if err != nil {
 		a.clientError(w, http.StatusBadRequest)
 		return
@@ -130,11 +127,6 @@ func (a *application) snippetCreatePost(w http.ResponseWriter, r *http.Request) 
 		data := a.newTemplateModel(r)
 		data.Form = form
 		a.render(w, http.StatusUnprocessableEntity, "create.tmpl", data)
-		return
-	}
-
-	if err != nil {
-		a.clientError(w, http.StatusBadRequest)
 		return
 	}
 
