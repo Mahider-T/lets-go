@@ -261,3 +261,7 @@ func (a *application) userLogout(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 	// fmt.Fprintln(w, "Logout a user ...")
 }
+
+func ping(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("OK"))
+}
