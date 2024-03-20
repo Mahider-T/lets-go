@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"io"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"oogway/first/snippetbox/internal/assert"
@@ -41,29 +40,13 @@ func TestPing(t *testing.T) {
 
 func TestPingEndToEnd(t *testing.T) {
 
-	app := &application{
-		errorLogger: log.New(io.Discard, "", 0),
-		infoLogger:  log.New(io.Discard, "", 0),
-	}
+	app := newTestApplication(t)
 
-	ts := httptest.NewTLSServer(app.routers())
+	ts := newTestServer(t, app.routers())
 	defer ts.Close()
 
-	rs, err := ts.Client().Get((ts.URL + "/ping"))
+	code, _, body := ts.get(t, "/ping")
 
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	assert.Equal(t, rs.StatusCode, http.StatusOK)
-
-	defer rs.Body.Close()
-	body, err := io.ReadAll(rs.Body)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	bytes.TrimSpace(body)
-	assert.Equal(t, string(body), "OK")
+	assert.Equal(t, code, http.StatusOK)
+	assert.Equal(t, body, "OK")
 }
